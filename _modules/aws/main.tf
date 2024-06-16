@@ -13,6 +13,13 @@ resource "aws_s3_bucket" "main_bucket" {
   bucket = local.full
 }
 
+locals {
+  resource_types = {
+    html = "text/html"
+    css  = "text/css"
+  }
+}
+
 resource "aws_s3_object" "dist" {
   for_each = fileset(var.src_dir, "**")
 
@@ -20,7 +27,7 @@ resource "aws_s3_object" "dist" {
   key    = each.value
   source = "${var.src_dir}${each.value}"
 
-  content_type = endswith("${each.value}", ".html") ? "text/html" : null
+  content_type = lookup(local.resource_types, element(split(".", each.value), length(split(".", each.value)) -1 ), null)
   # etag makes the file update when it changes; see https://stackoverflow.com/questions/56107258/terraform-upload-file-to-s3-on-every-apply
   etag   = filemd5("${var.src_dir}${each.value}")
 }
