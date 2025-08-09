@@ -14,6 +14,11 @@ resource "aws_s3_bucket" "main_bucket" {
 }
 
 locals {
+  dist_files = toset([
+    for file in fileset(var.src_dir, "**") :
+    file if !endswith(file, ".metadata")
+  ])
+
   resource_types = {
     html = "text/html"
     css  = "text/css"
@@ -24,7 +29,7 @@ locals {
 }
 
 resource "aws_s3_object" "dist" {
-  for_each = fileset(var.src_dir, "**")
+  for_each = local.dist_files
 
   bucket = aws_s3_bucket.main_bucket.id
   key    = each.value
