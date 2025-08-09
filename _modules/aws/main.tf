@@ -16,7 +16,7 @@ resource "aws_s3_bucket" "main_bucket" {
 locals {
   dist_files = toset([
     for file in fileset(var.src_dir, "**") :
-    file if !endswith(file, ".metadata")
+    file if !endswith(file, ".tfmeta")
   ])
 
   resource_types = {
