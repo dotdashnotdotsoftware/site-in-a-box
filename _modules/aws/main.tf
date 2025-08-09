@@ -18,6 +18,8 @@ locals {
     html = "text/html"
     css  = "text/css"
     svg  = "image/svg+xml"
+    mjs  = "text/javascript"
+    js   = "text/javascript"
   }
 }
 
