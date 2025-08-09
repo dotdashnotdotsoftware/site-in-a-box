@@ -14,10 +14,15 @@ resource "aws_s3_bucket" "main_bucket" {
 }
 
 locals {
-  dist_files = toset([
+  src_files_and_metadata = {
     for file in fileset(var.src_dir, "**") :
-    file if !endswith(file, ".tfmeta")
-  ])
+    file => (
+        fileexists("${var.src_dir}${file}.tfmeta") && !endswith(file, ".tfmeta") ?
+        jsondecode(file("${var.src_dir}${file}.tfmeta")) :
+        {}
+      )
+    if !endswith(file, ".tfmeta")
+  }
 
   resource_types = {
     html = "text/html"
@@ -29,15 +34,27 @@ locals {
 }
 
 resource "aws_s3_object" "dist" {
-  for_each = local.dist_files
+  for_each = local.src_files_and_metadata
 
   bucket = aws_s3_bucket.main_bucket.id
-  key    = each.value
-  source = "${var.src_dir}${each.value}"
+  key    = each.key
+  source = "${var.src_dir}${each.key}"
 
-  content_type = lookup(local.resource_types, element(split(".", each.value), length(split(".", each.value)) -1 ), null)
+  content_type  = lookup(
+                    each.value,
+                    "content_type",
+                    lookup(
+                      local.resource_types,
+                      element(
+                        split(".", each.key),
+                        length(split(".", each.key)) -1
+                      ),
+                      null
+                    )
+                  )
+  cache_control = lookup(each.value, "cache_control", null)
   # etag makes the file update when it changes; see https://stackoverflow.com/questions/56107258/terraform-upload-file-to-s3-on-every-apply
-  etag   = filemd5("${var.src_dir}${each.value}")
+  etag          = filemd5("${var.src_dir}${each.key}")
 }
 
 resource "aws_s3_bucket_public_access_block" "example" {
