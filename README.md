@@ -40,3 +40,14 @@ and the ability to directly access the site via the cloudfront link. Finally, ru
 terraform apply
 ```
 Once this is done, your domain should now work on http/https on both www.<your-domain> and simply <your-domain>.
+
+## Per-file overrides
+
+For every file in the provided src_dir, if there is a matching file ending with ".tfmeta", it will allow you to override the S3 upload behaviours for that file. E.g. for index.html, if there is an index.html.tfmeta file with JSON contents such as:
+```json
+{
+    "content_type": "text/css",
+    "cache_control": "max-age=31536000"
+}
+```
+It will let you override the default of `text/html` & tell S3 to return cache control headers for this uploaded file.
