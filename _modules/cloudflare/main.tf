@@ -39,3 +39,26 @@ resource "cloudflare_record" "cert_records" {
   type    = each.value.resource_record_type
   proxied = false
 }
+
+resource "cloudflare_ruleset" "rewrite_index" {
+  zone_id     = data.cloudflare_zone.zone_info.id
+  name        = "Rewrite /path/ to /path/index.html"
+  description = "Adds index.html to folder paths"
+  kind        = "zone"
+  phase       = "http_request_transform"
+
+  rules {
+    ref         = "rewrite-folder-paths"
+    description = "Rewrite /somepath/ to /somepath/index.html"
+    expression = "not http.request.uri.path contains \".\" and http.request.uri.path ne \"\" and http.request.uri.path ne \"/\""
+    action      = "rewrite"
+
+    action_parameters {
+      uri {
+        path {
+          expression = "concat(raw.http.request.uri.path, \"/index.html\")"
+        }
+      }
+    }
+  }
+}
